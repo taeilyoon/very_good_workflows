@@ -73,18 +73,12 @@ jobs:
         if: "${{inputs.setup != ''}}"
         run: ${{inputs.setup}}
 
-      - name: ✨ Check Formatting
-        run: flutter format --set-exit-if-changed lib test
-
-      - name: 🕵️ Analyze
-        run: flutter analyze lib test
-
-      - name: 🧪 Run Tests
-        run: very_good test -j ${{inputs.concurrency}} ${{(inputs.test_recursion && '--recursive') || ''}} ${{(inputs.test_optimization && '--optimization') || '--no-optimization'}} --coverage --test-randomize-ordering-seed random
-
-      - name: 📊 Check Code Coverage
-        uses: VeryGoodOpenSource/very_good_coverage@v2
+      - run: flutter build apk --release --split-per-abi
+      - run: flutter build appbundle
+      - name: Create a Release in GitHub
+        uses: ncipollo/release-action@v1
         with:
-          path: ${{inputs.working_directory}}/coverage/lcov.info
-          exclude: ${{inputs.coverage_excludes}}
-          min_coverage: ${{inputs.min_coverage}}
+          artifacts: "build/app/outputs/apk/release/*.apk,build/app/outputs/bundle/release/app-release.aab"
+          token: ${{ secrets.GH_TOKEN }}
+          tag: ${{ steps.version.outputs.content }}
+          commit: ${{ github.sha }}
